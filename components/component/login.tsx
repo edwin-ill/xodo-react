@@ -1,10 +1,12 @@
 "use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -23,6 +25,7 @@ export function Login() {
           setError(data.error || 'An error occurred. Please try again later.');
         } else {
           console.log('Login successful:', data);
+          router.push('/dashboard');
         }
       } else {
         const errorData = await response.json();
