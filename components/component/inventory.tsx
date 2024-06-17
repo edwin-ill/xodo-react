@@ -41,10 +41,6 @@ export function Inventory() {
       });
   }, []);
 
-  if (!vehicles.length) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="flex min-h-screen w-full flex-col">
       <header className="flex h-16 items-center border-b bg-gray-100 px-6 dark:bg-gray-800">
@@ -84,12 +80,6 @@ export function Inventory() {
       <div className="flex flex-1">
         <div className="hidden border-r bg-gray-100/40 lg:block dark:bg-gray-800/40">
           <div className="flex h-full max-h-screen flex-col gap-2">
-            <div className="flex h-[60px] items-center border-b px-6">
-              <Link className="flex items-center gap-2 font-semibold" href="#">
-                <CarIcon className="h-6 w-6" />
-                <span className="">Acme Car Dealership</span>
-              </Link>
-            </div>
             <div className="flex-1 overflow-auto py-2">
               <nav className="grid items-start px-4 text-sm font-medium">
                 <Link
@@ -106,10 +96,16 @@ export function Inventory() {
                 </Link>
                 <Link
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                  href="#">
-                  <UsersIcon className="h-4 w-4" />
-                  Leads
+                  href="/popup">
+                  <CarIcon className="h-4 w-4" />
+                  Add new car
                 </Link>
+                <Link
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
+                  href="/dealerform">
+                  <UsersIcon className="h-4 w-4" />
+                  Add new dealership
+                </Link>                
                 <Link
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
                   href="#">

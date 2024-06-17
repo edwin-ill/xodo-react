@@ -6,9 +6,9 @@ import { ThemeProvider } from 'next-themes';
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuContent, DropdownMenu } from "@/components/ui/dropdown-menu";
 import { CardTitle, CardHeader, CardContent, Card, CardDescription} from "@/components/ui/card";
-import { ResponsiveBar } from "@nivo/bar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import Cookies from 'js-cookie';
 
 interface DashboardData {
   totalVehicles: number;
@@ -27,6 +27,9 @@ interface DashboardData {
   salesLeads: number;
 }
 
+const token = Cookies.get('token');
+axios.defaults.headers.post['Authorization'] = 'Bearer ${token}';
+
 export function Dashboard() {
  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
@@ -42,12 +45,6 @@ export function Dashboard() {
         console.error("There was an error fetching the data!", error);
       });
   }, []);
-
-  if (!dashboardData) {
-    console.log(dashboardData);
-    return <div>Loading...</div>;
-    
-  }
 
   return (
     <ThemeProvider>
@@ -89,12 +86,7 @@ export function Dashboard() {
         <div className="flex flex-1">
           <div className="hidden border-r bg-gray-100/40 lg:block">
             <div className="flex h-full max-h-screen flex-col gap-2">
-              <div className="flex h-[60px] items-center border-b px-6">
-                <Link className="flex items-center gap-2 font-semibold" href="#">
-                  <CarIcon className="h-6 w-6" />
-                  <span className="">Acme Car Dealership</span>
-                </Link>
-              </div>
+              
               <div className="flex-1 overflow-auto py-2">
                 <nav className="grid items-start px-4 text-sm font-medium">
                   <Link
@@ -108,13 +100,19 @@ export function Dashboard() {
                     href="/inventory">
                     <CarIcon className="h-4 w-4"/>
                     Inventory
-                  </Link>
+                  </Link>      
                   <Link
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                    href="#">
-                    <UsersIcon className="h-4 w-4" />
-                    Leads
-                  </Link>
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
+                  href="/popup">
+                  <CarIcon className="h-4 w-4" />
+                  Add new car
+                  </Link>            
+                  <Link
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
+                  href="/dealerform">
+                  <UsersIcon className="h-4 w-4" />
+                  Add new dealership
+                </Link>     
                   <Link
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
                     href="#">
@@ -127,7 +125,7 @@ export function Dashboard() {
           </div>
           <div className="flex flex-1 flex-col">
             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
@@ -157,17 +155,7 @@ export function Dashboard() {
                     <div className="text-2xl font-bold">{}</div>
                     <p className="text-xs text-gray-500">+{}% from last month</p>
                   </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-                    <CarIcon className="h-4 w-4 text-gray-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{}</div>
-                    <p className="text-xs text-gray-500">+{}% from last month</p>
-                  </CardContent>
-                </Card>
+                </Card>                
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
@@ -191,29 +179,7 @@ export function Dashboard() {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Lead Management</CardTitle>
-                    <UsersIcon className="h-4 w-4 text-gray-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-2">
-                      <div className="flex items-center justify-between">
-                        <span>New Leads</span>
-                        <span className="font-medium">{}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Qualified Leads</span>
-                        <span className="font-medium">{}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Sales Leads</span>
-                        <span className="font-medium">{}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                </Card>               
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Performance</CardTitle>
@@ -222,22 +188,7 @@ export function Dashboard() {
                 </Card>
               </div>
               <div className="grid gap-4">
-                <Tabs defaultValue="sales">
-                  <TabsList>
-                    <TabsTrigger value="sales">Sales</TabsTrigger>
-                    <TabsTrigger value="inventory">Inventory</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="sales">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Model</TableHead>
-                          <TableHead>Sales</TableHead>
-                          <TableHead>Revenue</TableHead>
-                        </TableRow>
-                      </TableHeader>                      
-                    </Table>
-                  </TabsContent>
+                <Tabs defaultValue="inventory">          
                   <TabsContent value="inventory">
                     <Table>
                       <TableHeader>

@@ -1,6 +1,10 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+
+const url = "https://localhost:7126/api/account/Authenticate";
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -9,36 +13,41 @@ export function Login() {
   const router = useRouter();
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
+    event.preventDefault(); 
 
     try {
-      const response = await fetch(`https://localhost:7126/api/Account/authenticate?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await axios.post(url, {
+        email: email,
+        password: password,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.hasError) {
-          setError(data.error || 'An error occurred. Please try again later.');
-        } else {
-          console.log('Login successful:', data);
-          router.push('/dashboard');
-        }
+    
+      const data = response.data;
+      const token = data.jwToken; 
+      const in60minutes = 1/24;
+      
+      Cookies.set('token', token, {expires : in60minutes})
+    
+      if (data.hasError) {
+        setError(data.error || 'An error occurred. Please try again later.');
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Invalid email or password.');
+        console.log('Login successful:', data);
+        router.push('/dashboard');
       }
     } catch (error) {
-      setError('An error occurred. Please try again later.');
-    }
-  };
+      if (axios.isAxiosError(error)) {
+        // The request was made and the server responded with a status code that falls out of the range of 2xx
+        setError(error.response?.data.message  || 'Invalid email or password.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setError('An error occurred. Please try again later.');
+      }
+    };
+
+  } 
 
   return (
-    <div className="flex items-center justify-center h-screen bg-[url(/placeholder.svg?height=1080&width=1920)] bg-cover bg-center">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg dark:bg-gray-800">
+    <div className="flex items-center justify-center h-screen bg-cover bg-center" style={{ backgroundImage: "url('https://dragon2000-multisite.s3.eu-west-2.amazonaws.com/wp-content/uploads/sites/203/2021/05/19110448/Car-Station-Home-page-hero-2_result.jpg?height=1080&width=1920')" }}>
+    <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg dark:bg-gray-800">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Car Dealership Login</h1>
         </div>

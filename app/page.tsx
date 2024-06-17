@@ -1,5 +1,5 @@
-import { Login } from '@/components/component/login'
+import { Login}  from '@/components/component/login'
 
 export default function Home() {
-  return <Login/>
+  return <Login/>; 
 }
