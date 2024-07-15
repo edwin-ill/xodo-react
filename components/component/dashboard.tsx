@@ -5,44 +5,65 @@ import Link from "next/link";
 import { ThemeProvider } from 'next-themes';
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuContent, DropdownMenu } from "@/components/ui/dropdown-menu";
-import { CardTitle, CardHeader, CardContent, Card, CardDescription} from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CardTitle, CardHeader, CardContent, Card} from "@/components/ui/card";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import Cookies from 'js-cookie';
+import { useSession } from 'next-auth/react';
 
-interface DashboardData {
-  totalVehicles: number;
-  totalVehiclesPercentage: number;
-  newVehicles: number;
-  newVehiclesPercentage: number;
-  usedVehicles: number;
-  usedVehiclesPercentage: number;
-  pendingOrders: number;
-  pendingOrdersPercentage: number;
-  salesData: Array<{ month: string; sales: number }>;
-  sales: Array<{ model: string; sales: number; revenue: number }>;
-  inventory: Array<{ model: string; status: string; stock: number }>;
-  newLeads: number;
-  qualifiedLeads: number;
-  salesLeads: number;
+interface Vehicle {
+  id: number;
+  carMake: string;
+  model: string;
+  year: number;
+  color: string;
+  price: number;
+  engineType: string;
+  transmissionType: string;
+  mileage: number;
+  description: string;
+  dealershipId: number;
+  vehicleType: string;
+  status: string;
+  dealership: {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    phoneNumber: string;
+    email: string;
+  };
+  vehicleImages: Array<{
+    id: number;
+    vehicleId: number;
+    imageUrl: string;
+  }>;
 }
 
-const token = Cookies.get('token');
-axios.defaults.headers.post['Authorization'] = 'Bearer ${token}';
+interface DashboardData {
+  succeeded: boolean;
+  message: string;
+  errors: null | any;
+  data: Vehicle[];
+}
 
 export function Dashboard() {
- const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const {data : session} = useSession();
 
   useEffect(() => {
-
-    axios.get('https://localhost:7126/api/v1/Vehicle') 
+    setIsLoading(true);
+    axios.get('https://localhost:7126/api/v1/Vehicle')
       .then(response => {
-        console.error("Dashboard data:", response.data);
+        console.log("Dashboard data:", response.data);
         setDashboardData(response.data);
-        
+        setIsLoading(false);
       })
       .catch(error => {
         console.error("There was an error fetching the data!", error);
+        setError(error);
+        setIsLoading(false);
       });
   }, []);
 
@@ -86,7 +107,6 @@ export function Dashboard() {
         <div className="flex flex-1">
           <div className="hidden border-r bg-gray-100/40 lg:block">
             <div className="flex h-full max-h-screen flex-col gap-2">
-              
               <div className="flex-1 overflow-auto py-2">
                 <nav className="grid items-start px-4 text-sm font-medium">
                   <Link
@@ -100,19 +120,13 @@ export function Dashboard() {
                     href="/inventory">
                     <CarIcon className="h-4 w-4"/>
                     Inventory
-                  </Link>      
+                  </Link>        
                   <Link
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                  href="/popup">
-                  <CarIcon className="h-4 w-4" />
-                  Add new car
-                  </Link>            
-                  <Link
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                  href="/dealerform">
-                  <UsersIcon className="h-4 w-4" />
-                  Add new dealership
-                </Link>     
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
+                    href="/dealerform">
+                    <UsersIcon className="h-4 w-4" />
+                    Add new dealership
+                  </Link>     
                   <Link
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
                     href="#">
@@ -132,28 +146,32 @@ export function Dashboard() {
                     <CarIcon className="h-4 w-4 text-gray-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{}</div>
-                    <p className="text-xs text-gray-500">+{}% from last month</p>
+                    <div className="text-2xl font-bold">{dashboardData?.data.length || 0}</div>
+                    <p className="text-xs text-gray-500">Total number of vehicles</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">New Vehicles</CardTitle>
+                    <CardTitle className="text-sm font-medium">Available Vehicles</CardTitle>
                     <CarIcon className="h-4 w-4 text-gray-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{}</div>
-                    <p className="text-xs text-gray-500">+{}% from last month</p>
+                    <div className="text-2xl font-bold">
+                      {dashboardData?.data.filter(v => v.status === "Available").length || 0}
+                    </div>
+                    <p className="text-xs text-gray-500">Vehicles in stock</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Used Vehicles</CardTitle>
+                    <CardTitle className="text-sm font-medium">Sold Vehicles</CardTitle>
                     <CarIcon className="h-4 w-4 text-gray-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{}</div>
-                    <p className="text-xs text-gray-500">+{}% from last month</p>
+                    <div className="text-2xl font-bold">
+                      {dashboardData?.data.filter(v => v.status == "Sold").length || 0}
+                    </div>
+                    <p className="text-xs text-gray-500">Reserved vehicles</p>
                   </CardContent>
                 </Card>                
               </div>
@@ -167,15 +185,19 @@ export function Dashboard() {
                     <div className="grid gap-2">
                       <div className="flex items-center justify-between">
                         <span>New Vehicles</span>
-                        <span className="font-medium">{}</span>
+                        <span className="font-medium">
+                          {dashboardData?.data.filter(v => v.vehicleType === "1").length || 0}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Used Vehicles</span>
-                        <span className="font-medium">{}</span>
+                        <span>Reserved Vehicles</span>
+                        <span className="font-medium">
+                          {dashboardData?.data.filter(v => v.status == "Reserved").length || 0}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Pending Orders</span>
-                        <span className="font-medium">{}</span>
+                        <span>Total Vehicles</span>
+                        <span className="font-medium">{dashboardData?.data.length || 0}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -184,23 +206,85 @@ export function Dashboard() {
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Performance</CardTitle>
                     <CarIcon className="h-4 w-4 text-gray-500" />
-                  </CardHeader>                  
+                  </CardHeader>
+                  <CardContent>
+                    <p>Add performance metrics here</p>
+                  </CardContent>
                 </Card>
               </div>
               <div className="grid gap-4">
-                <Tabs defaultValue="inventory">          
-                  <TabsContent value="inventory">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Model</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Stock</TableHead>
-                        </TableRow>
-                      </TableHeader>                      
-                    </Table>
-                  </TabsContent>
-                </Tabs>
+              <Tabs defaultValue="inventory">          
+                <TabsContent value="inventory">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Make</TableHead>
+                        <TableHead>Model</TableHead>
+                        <TableHead>Year</TableHead>
+                        <TableHead>Count</TableHead>
+                        <TableHead>Price Range</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        const groupedData = (dashboardData?.data || []).reduce((acc, vehicle) => {
+                          const make = vehicle.carMake.trim().toLowerCase();
+                          const model = vehicle.model.trim().toLowerCase();
+                          const year = vehicle.year;
+                          const key = `${make}-${model}-${year}`;
+                          
+                          if (!acc[key]) {
+                            acc[key] = {
+                              make: vehicle.carMake,
+                              model: vehicle.model,
+                              year: vehicle.year,
+                              count: 0,
+                              prices: [],
+                            };
+                          }
+                          
+                          acc[key].count++;
+                          acc[key].prices.push(vehicle.price);
+                          
+                          return acc;
+                        }, {} as Record<string, {
+                          make: string;
+                          model: string;
+                          year: number;
+                          count: number;
+                          prices: number[];
+                        }>);
+
+                        console.log("Grouped Data:", groupedData);  
+
+                        return Object.values(groupedData)
+                          .sort((a, b) => 
+                            a.make.localeCompare(b.make) || 
+                            a.model.localeCompare(b.model) || 
+                            a.year - b.year
+                          )
+                          .map((group) => {
+                            const minPrice = Math.min(...group.prices);
+                            const maxPrice = Math.max(...group.prices);
+                            const priceRange = minPrice === maxPrice 
+                              ? `$${minPrice.toLocaleString()}`
+                              : `$${minPrice.toLocaleString()} - $${maxPrice.toLocaleString()}`;
+
+                            return (
+                              <TableRow key={`${group.make}-${group.model}-${group.year}`}>
+                                <TableCell>{group.make}</TableCell>
+                                <TableCell>{group.model}</TableCell>
+                                <TableCell>{group.year}</TableCell>
+                                <TableCell>{group.count}</TableCell>
+                                <TableCell>{priceRange}</TableCell>
+                              </TableRow>
+                            );
+                          });
+                      })()}
+                    </TableBody>
+                  </Table>
+                </TabsContent>
+              </Tabs>
               </div>
             </main>
           </div>
@@ -208,6 +292,8 @@ export function Dashboard() {
       </div>
     </ThemeProvider>
   );
+}
+
   function CarIcon(props) {
     return (
       <svg
@@ -296,4 +382,4 @@ export function Dashboard() {
       </svg>
     )
   }
-}
+

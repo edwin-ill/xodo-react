@@ -55,7 +55,7 @@ const handleNavigate = () => {
             Name
             </Label>
             <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
+              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
               id="name"
               placeholder="Enter name"
               value={name}
@@ -69,7 +69,7 @@ const handleNavigate = () => {
               Address
             </Label>
             <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
+              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
               id="address"
               placeholder="Enter address"
               value={address}
@@ -81,7 +81,7 @@ const handleNavigate = () => {
             Phone Number
             </Label>
             <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
+              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
               id="phoneNumber"
               placeholder="Enter phone number"
               value={phoneNumber}
@@ -95,7 +95,7 @@ const handleNavigate = () => {
             Email
             </Label>
             <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
+              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
               id="email"
               placeholder="Enter email"
               value={email}
@@ -107,7 +107,7 @@ const handleNavigate = () => {
             City
             </Label>
             <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
+              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
               id="vin"
               placeholder="Enter city"
               value={city}

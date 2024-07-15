@@ -1,333 +1,412 @@
-'use client'
-import { CardTitle, CardDescription, CardHeader, CardContent, CardFooter, Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { SelectValue, SelectTrigger, SelectItem, SelectContent, Select } from "@/components/ui/select"
+'use client';
+
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  CardTitle, CardDescription, CardHeader, CardContent, CardFooter, Card
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { SelectValue, SelectTrigger, SelectItem, SelectContent, Select } from "@/components/ui/select";
+import Modal from './Modal';
+import crypto from 'crypto';
 
-const url = "https://localhost:7126/api/v1/Vehicle";
+const basecloudinaryUrl = "https://api.cloudinary.com/v1_1/diyhxd1my"
+const uploadImgUrl = `${basecloudinaryUrl}/image/upload`;
+const deleteImgUrl = `${basecloudinaryUrl}/image/destroy`;
+const uploadPreset = "nwpzqpdi";
+const baseUrl = 'https://localhost:7126/api/v1';
+const vehicleUrl = `${baseUrl}/Vehicle`;
+const imageUrl = `${baseUrl}/Image`;
+const cloudName = 'diyhxd1my';
+const apiKey = '347341592221484';
 
-export function Popup() {
-  const router = useRouter();
-const handleNavigate = () => {
-  router.push('/inventory');
+
+interface VehicleImage {
+  id?: number;
+  vehicleId: number | null;
+  imageUrl: string;
+  public_id: string;
+}
+
+interface Vehicle {
+  id: number;
+  vin: string;
+  carMake: string;
+  model: string;
+  year: number;
+  color: string;
+  price: number;
+  engineType: string;
+  transmissionType: string;
+  mileage: number;
+  description: string;
+  dealershipId: number;
+  vehicleType: string;
+  status: string;
+  vehicleImages: VehicleImage[];
+}
+
+interface PopupProps {
+  onClose: () => void;
+  vehicleToEdit?: Vehicle | null;
+}
+
+type PatchOperation = {
+  operationType: number;
+  path: string;
+  op: string;
+  from: string;
+  value: any;
 };
-  const [vin, setVIN] = useState('');
-  const [CarMake, setCarMake] = useState('');
-  const [model, setModel] = useState('');
-  const [year, setYear] = useState('');
-  const [color, setColor] = useState('');
-  const [price, setPrice] = useState('');
-  const [engineType, setEngineType] = useState('');
-  const [transmissionType, setTransmissionType] = useState('');
-  const [mileage, setMileage] = useState('');
-  const [description, setDescription] = useState('');
-  const [dealershipId, setDealershipId] = useState('');
-  const [vehicleType, setVehicleType] = useState('');
 
+export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
+  const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
+  const [vehicleData, setVehicleData] = useState<Partial<Vehicle>>({});
+  const [vehicleImages, setVehicleImages] = useState<VehicleImage[]>([]);
+  const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
+  const [imagesToDelete, setImagesToDelete] = useState<number[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [localImagePreviews, setLocalImagePreviews] = useState<string[]>([]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleNavigate = () => {
+    router.push('/inventory');
+  };
+
+  useEffect(() => {
+    if (vehicleToEdit) {
+      setIsEditing(true);
+      setVehicleData(vehicleToEdit);
+      setVehicleImages(vehicleToEdit.vehicleImages || []);
+      setExistingImages(vehicleToEdit.vehicleImages?.map(img => img.imageUrl) || []);
+      console.log("Vehicle images set:", vehicleToEdit.vehicleImages);
+    }
+  }, [vehicleToEdit]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setVehicleData(prev => ({ ...prev, [name]: value }));
+  };
+
+ 
+  const uploadImageToCloudinary = async (image: File) => {
+    const formData = new FormData();
+    formData.append("file", image);
+    formData.append("upload_preset", uploadPreset);
+    const response = await axios.post(uploadImgUrl, formData);
+    return {
+      secure_url: response.data.secure_url,
+      public_id: response.data.public_id,
+    };
+  }; 
+ 
+  
+ 
+  const handleDeleteImage = useCallback(async (id: number, publicId: string) => {
+    try {    
+      
+      await axios.delete(`https://localhost:7126/api/v1/Image/${id}`);
+      setVehicleImages(prev => prev.filter(img => img.id !== id));
+      setImagesToDelete(prev => {
+        if (typeof id === 'number') {
+          return [...prev, id];
+        }
+        return prev;
+      });
+      console.log("Image deleted successfully");
+    } catch (error) {
+      console.error("Error deleting image:", error);
+    }
+  }, []);
+
+  const handleAddImage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+  
+    const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+    setLocalImagePreviews(prev => [...prev, ...newPreviews]);
+    setFilesToUpload(prev => {
+      if (!prev) return files;
+      const dataTransfer = new DataTransfer();
+      Array.from(prev).forEach(file => dataTransfer.items.add(file));
+      Array.from(files).forEach(file => dataTransfer.items.add(file));
+      return dataTransfer.files;
+    });
+  }, []);
+
+  const handleVINLookup = async () => {
     try {
-      const response = await axios.post(url, {
-        carMake : CarMake,
-        vIN : vin,
-        model : model,
-        year: year,
-        color : color,
-        price: price,
-        engineType : engineType,
-        transmissionType : transmissionType,
-        mileage : mileage,
-        dealershipId: dealershipId,
-        description : description,
-        vehicleType : vehicleType});
-      console.log(response.data);
+      const response = await axios.get(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/${vehicleData.vin}?format=json`);
+      const data = response.data.Results[0];
+
+      console.log("API Response:", data);
+
+      setVehicleData(prev => ({
+        ...prev,
+        carMake: data.Make || '',
+        model: data.Model || '',
+        year: data.ModelYear || '',
+        engineType: data.EngineConfiguration || '',
+        transmissionType: data.TransmissionStyle || '',
+        description: `${data.Make} ${data.Model} ${data.ModelYear} - ${data.EngineHP} HP, ${data.FuelTypePrimary} engine`
+      }));
+
+      console.log("Setting CarMake:", data.Make);
+      console.log("Setting Model:", data.Model);
+      console.log("Setting Year:", data.ModelYear);
+      console.log("Setting EngineType:", data.EngineConfiguration);
+      console.log("Setting TransmissionType:", data.TransmissionStyle);
+
+      const makes = ["HONDA", "TOYOTA", "HYUNDAI", "KIA", "FORD"];
+      const matchedMake = makes.find(make => make === data.Make.toUpperCase());
+      if (matchedMake) {
+        setVehicleData(prev => ({ ...prev, carMake: matchedMake }));
+        console.log("Matched CarMake:", matchedMake);
+      }
+
+      if (data.EngineConfiguration) {
+        const engineConfig = data.EngineConfiguration.toLowerCase();
+        if (engineConfig.includes('v-shaped')) {
+          if(data.EngineCylinders === '6') { 
+            setVehicleData(prev => ({ ...prev, engineType: 'v6' }));
+          } else if(data.EngineCylinders === '8') {
+            setVehicleData(prev => ({ ...prev, engineType: 'v8' }));
+          }         
+        } else if (engineConfig === 'in-line' && data.EngineCylinders === '4') {
+          setVehicleData(prev => ({ ...prev, engineType: 'inline4' }));
+        }
+        console.log("Matched EngineType:", engineConfig);
+      }
+
+      if (data.TransmissionStyle) {
+        const transmissionStyle = data.TransmissionStyle.toLowerCase();
+        if (transmissionStyle.includes('automatic')) {
+          setVehicleData(prev => ({ ...prev, transmissionType: 'automatic' }));
+        } else if (transmissionStyle.includes('manual')) {
+          setVehicleData(prev => ({ ...prev, transmissionType: 'manual' }));
+        }
+        console.log("Matched TransmissionType:", transmissionStyle);
+      }
+    } catch (error) {
+      console.error('Error fetching VIN data:', error);
     }
-    catch(error)
-    {
-      console.log(error);
+  };
+  useEffect(() => {
+    return () => {
+      localImagePreviews.forEach(preview => {
+        URL.revokeObjectURL(preview);
+      });
+      
+
+    };
+  }, [localImagePreviews]);
+
+  const getPatchOperations = (original: Partial<Vehicle>, updated: Partial<Vehicle>): PatchOperation[] => {
+    const patchOperations: PatchOperation[] = [];
+  
+    for (const key in updated) {
+      if (original[key] !== updated[key]) {
+        patchOperations.push({
+          operationType: 0,
+          path: `/${key}`,
+          op: 'replace',
+          from: '',
+          value: updated[key]
+        });
+      }
     }
-  }   
+  
+    return patchOperations;
+  };  
+
+  const handleSubmit = async () => {
+    try {
+      let vehicleId: number | null = null;
+      if (isEditing && vehicleToEdit) {
+        const patchOperations = getPatchOperations(vehicleToEdit, vehicleData);
+        await axios.patch(`${vehicleUrl}/${vehicleToEdit.id}`, patchOperations, {
+          headers: { 'Content-Type': 'application/json-patch+json' }
+        });
+        vehicleId = vehicleToEdit.id;
+        console.log(`Vehicle updated with ID: ${vehicleId}`);
+      } else {
+        const vehiclePayload = {
+          ...vehicleData,
+          dealershipId: 1, 
+          status: 'Available'
+        };
+        const response = await axios.post(vehicleUrl, vehiclePayload);
+        vehicleId = response.data.id;
+        console.log(`New vehicle created with ID: ${vehicleId}`);
+      }
+
+      if (vehicleId && filesToUpload?.length) {
+        console.log(`Uploading ${filesToUpload.length} images for vehicle ${vehicleId}`);
+        
+        for (let i = 0; i < filesToUpload.length; i++) {
+          try {
+            const file = filesToUpload[i];
+            console.log(`Uploading image ${i + 1} to Cloudinary...`);
+            const imageUrl = await uploadImageToCloudinary(file);
+            console.log(`Image ${i + 1} uploaded to Cloudinary. URL: ${imageUrl.secure_url}`);
+            console.log(imageUrl);
+            
+            console.log(`Posting image ${i + 1} to backend...`);
+            const imageResponse = await axios.post('https://localhost:7126/api/v1/Image/', {
+              imageUrl: imageUrl.secure_url,
+              vehicleId: vehicleId,
+              publicId: imageUrl.public_id 
+            });            
+            console.log(`Image ${i + 1} posted to backend. Response:`, imageResponse.data);
+          } catch (error) {
+            console.error(`Error uploading image ${i + 1}:`, error);
+          }
+        }
+      } else {
+        console.log(`No images to upload for vehicle ${vehicleId}`);
+      }
+  
+      console.log(`Vehicle ${isEditing ? 'updated' : 'added'} successfully`);
+      handleNavigate();
+      onClose();
+    } catch (error) {
+      console.error('Error handling vehicle submission:', error);
+      // Consider adding user-friendly error handling here
+    }
+  };
 
   return (
-    <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="bg-gray-900 text-white p-6 relative">
-        <CardTitle className="text-2xl font-bold">Add New Vehicle</CardTitle>
-        <CardDescription className="text-gray-300">Enter the details of the new vehicle.</CardDescription>
-        <Button className="absolute top-4 right-4 rounded-full" size="icon" variant="ghost" onClick={handleNavigate}>
-        
-          <XIcon className="w-5 h-5" />
-          
-        </Button>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
-        <div className="grid grid-cols-2 gap-6">
-        
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="CarMake">
-              Make
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="CarMake"
-              placeholder="Enter make"
-              value={CarMake}
-              onChange={(e) => setCarMake(e.target.value)}
-            />
+    <Modal isOpen={true} onClose={onClose}>
+      <Card>
+        <CardHeader className ="bg-gray-900 text-white p-6 relative">
+          <CardTitle  className="text-2xl font-bold">{isEditing ? 'Edit Vehicle' : 'Add Vehicle'}</CardTitle>
+          <CardDescription className="text-gray-300">Enter vehicle details below</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+  <div className="grid grid-cols-3 gap-4">
+    <div>
+      <Label htmlFor="vin">VIN</Label>
+      <div className="flex">
+        <Input id="vin" name="vin" value={vehicleData.vin || ''} onChange={handleInputChange} />
+        <Button onClick={handleVINLookup}>Lookup</Button>
+      </div>
+    </div>
+    <div>
+      <Label htmlFor="carMake">Car Make</Label>
+      <Input id="carMake" name="carMake" value={vehicleData.carMake || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="model">Model</Label>
+      <Input id="model" name="model" value={vehicleData.model || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="year">Year</Label>
+      <Input id="year" name="year" value={vehicleData.year || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="color">Color</Label>
+      <Input id="color" name="color" value={vehicleData.color || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="price">Price</Label>
+      <Input id="price" name="price" value={vehicleData.price || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="engineType">Engine Type</Label>
+      <Input id="engineType" name="engineType" value={vehicleData.engineType || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="transmissionType">Transmission Type</Label>
+      <Input id="transmissionType" name="transmissionType" value={vehicleData.transmissionType || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="mileage">Mileage</Label>
+      <Input id="mileage" name="mileage" value={vehicleData.mileage || ''} onChange={handleInputChange} />
+    </div>
+    <div>
+      <Label htmlFor="vehicleType">Vehicle Type</Label>
+      <Select name="vehicleType" value={vehicleData.vehicleType || ''} onValueChange={(value) => setVehicleData(prev => ({ ...prev, vehicleType: value }))}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select a vehicle type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="SUV">SUV</SelectItem>
+          <SelectItem value="Truck">Truck</SelectItem>
+          <SelectItem value="Sedan">Sedan</SelectItem>
+          <SelectItem value="Coupe">Coupe</SelectItem>
+          <SelectItem value="Convertible">Convertible</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+  <div className="mt-4">
+            <Label htmlFor="description">Description</Label>
+            <Input id="description" name="description" value={vehicleData.description || ''} onChange={handleInputChange} />
           </div>
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="model">
-              Model
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="model"
-              placeholder="Enter model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="year">
-              Year
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="year"
-              placeholder="Enter year"
-              type="number"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-            />
-          </div>
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="price">
-              Price
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="price"
-              placeholder="Enter price"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="engine">
-              Engine
-            </Label>
-            <Select>
-              <SelectTrigger id="engine" className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800">
-                <SelectValue placeholder="Select engine" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 border-gray-300 dark:border-gray-600 dark:border-gray-800">
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="v6">
-                  V6
-                </SelectItem>
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="v8">
-                  V8
-                </SelectItem>
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="inline4">
-                  Inline 4
-                </SelectItem>
-              </SelectContent>
-              
-            </Select>
-          </div>
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="transmission">
-              Transmission
-            </Label>
-            <Select>
-              <SelectTrigger id="transmission" className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800">
-                <SelectValue placeholder="Select transmission" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 border-gray-300 dark:border-gray-600 dark:border-gray-800">
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="automatic">
-                  Automatic
-                </SelectItem>
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="manual">
-                  Manual
-                </SelectItem>
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="cvt">
-                  CVT
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="mileage">
-              Mileage
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="mileage"
-              placeholder="Enter mileage"
-              type="number"
-              value={mileage}
-              onChange={(e) => setMileage(e.target.value)}
-            />
-          </div>
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="type">
-              Type
-            </Label>
-            <Select>
-              <SelectTrigger id="type" className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 border-gray-300 dark:border-gray-600 dark:border-gray-800">
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="sedan">
-                  Sedan
-                </SelectItem>
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="suv">
-                  SUV
-                </SelectItem>
-                <SelectItem className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" value="truck">
-                  Truck
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>        
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="Description">
-              Description
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="Description"
-              placeholder="Enter description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="year">
-              Dealership
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="dealershipId"
-              placeholder="Enter dealership ID"
-              value={dealershipId}
-              onChange={(e) => setDealershipId(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="year">
-              Color
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="color"
-              placeholder="Enter color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-            />
-          </div>
-          <div className="space-y-4">
-            <Label className="text-lg font-medium" htmlFor="year">
-              VIN
-            </Label>
-            <Input
-              className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:border-gray-800"
-              id="vin"
-              placeholder="Enter VIN"
-              value={vin}
-              onChange={(e) => setVIN(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <Label htmlFor="campus" className="text-lg font-medium">
-              Images
-            </Label>
-            <div className="flex items-center justify-center w-full">
-              <label
-                htmlFor="campus-image"
-                className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-              >
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <UploadIcon className="w-10 h-10 text-gray-400" />
-                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF</p>
+          <div className="mt-4">
+            <Label>Vehicle Images</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {vehicleImages.map((img, index) => (
+                <div key={`existing-${index}`} className="relative w-24 h-24">
+                  <img src={img.imageUrl} alt={`Vehicle ${index}`} className="w-full h-full object-cover" />
+                  <button
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                    onClick={() => 
+                      {
+                        console.log("Imagenes de lo vehiculo:", vehicleImages)
+                        console.log("imagene ma adentro", img)
+                      console.log("Deleting image:", img.id, img.public_id);
+                      img.id && handleDeleteImage(img.id, img.public_id)
+                    }}
+                  >
+                    X
+                  </button>
                 </div>
-                <input id="campus-image" type="file" className="hidden" />
-                </label>
-                </div>
-                </div>
-                </div>
-        
-      </CardContent>
-      <CardFooter className="bg-gray-900 text-white p-6 flex justify-end">
-        <Button
-          className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-          type="submit">
-          Save Vehicle
-        </Button>        
-      </CardFooter>      
-    </Card>
-    </form>
-  )
-}
+              ))}
+              {localImagePreviews.map((preview, index) => (
+              <div key={`preview-${index}`} className="relative w-24 h-24">
+                <img src={preview} alt={`New Vehicle ${index}`} className="w-full h-full object-cover" />
+                <button
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                  onClick={() => {
+                    setLocalImagePreviews(prev => prev.filter((_, i) => i !== index));
+                    setFilesToUpload(prev => {
+                      if (prev) {
+                        const dataTransfer = new DataTransfer();
+                        Array.from(prev)
+                          .filter((_, i) => i !== index)
+                          .forEach(file => dataTransfer.items.add(file));
+                        return dataTransfer.files;
+                      }
+                      return null;
+                    });
+                  }}
+                >
+                  X
+                </button>
+              </div>
+            ))}
 
-
-function UploadIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" x2="12" y1="3" y2="15" />
-    </svg>
-  )
-}
-
-function XIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  )
+                <label className="w-24 h-24 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleAddImage}
+                  className="hidden"
+                />
+                <span className="text-4xl text-gray-300">+</span>
+              </label>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className='bg-gray-900 text-white p-6 flex justify-end'>
+          <Button className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors" onClick={handleSubmit}>{isEditing ? 'Update' : 'Add'}</Button>
+          <Button className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors" onClick={onClose}>Cancel</Button>
+        </CardFooter>
+      </Card>
+    </Modal>
+  );
 }

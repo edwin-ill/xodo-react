@@ -1,11 +1,15 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuContent, DropdownMenu } from "@/components/ui/dropdown-menu";
 import { CardTitle, CardDescription, CardHeader, CardContent, Card } from "@/components/ui/card";
 import { TableHead, TableRow, TableHeader, TableCell, TableBody, Table } from "@/components/ui/table";
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
+import Modal from './Modal';
+import { Popup } from './popup';
 
 interface Vehicle {
   id: number;
@@ -21,10 +25,18 @@ interface Vehicle {
   description: string;
   dealershipId: number;
   vehicleType: string;
+  status: string; 
 }
 
 export function Inventory() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const {data : session} = useSession();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, vehicleId: null });
+
+
 
   useEffect(() => {
     axios.get('https://localhost:7126/api/v1/Vehicle')
@@ -41,9 +53,92 @@ export function Inventory() {
       });
   }, []);
 
+  const handleDeleteConfirmation = (vehicleId) => {
+    setDeleteConfirmation({ isOpen: true, vehicleId });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmation.vehicleId) {
+      await handleDelete(deleteConfirmation.vehicleId);
+    }
+    setDeleteConfirmation({ isOpen: false, vehicleId: null });
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, vehicleId: null });
+  };
+  
+  const handleDelete = async(vehicleId: number) => {
+    setLoading(true);
+    try {
+      const vehicle = vehicles.find(v => v.id == vehicleId);
+      if(!vehicle){
+        throw new Error("Vehicle not found")
+      }
+      const response = await axios.delete(`https://localhost:7126/api/v1/Vehicle/${vehicleId}`,{        
+        headers: {
+          Authorization: `Bearer ${session?.user.jwToken}`,
+        },
+      });
+      const { data } = response;
+      if (response.status === 204) {
+        console.log("Vehicle deleted successfully:", vehicleId);
+        setVehicles(prevVehicles => prevVehicles.filter(vehicle => vehicle.id !== vehicleId));
+      } else {
+        console.error("Failed to delete vehicle");
+      }
+    } catch (error) {
+      console.error("There was an error updating the status!", error);
+    } finally {
+      setLoading(false);
+    }    
+}
+
+  const handleStatusChange = async (vehicleId: number, newStatus: string) => {
+    setLoading(true);
+    try {
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) {
+        throw new Error("Vehicle not found");
+      }
+      const patchData = [
+        { op: "replace", path: "/status", value: newStatus }
+      ];
+      const response = await axios.patch(`https://localhost:7126/api/v1/Vehicle/${vehicleId}`, patchData, {
+        headers: {
+          'Content-Type': 'application/json-patch+json'
+        }
+      });
+      const { data } = response;
+      if (data && data.succeeded) {
+        setVehicles(prevVehicles =>
+          prevVehicles.map(vehicle =>
+            vehicle.id === vehicleId ? { ...vehicle, status: newStatus } : vehicle
+          )
+        );
+      } else {
+        console.error("Failed to update status:", data.message);
+      }
+    } catch (error) {
+      console.error("There was an error updating the status!", error);
+    } finally {
+      setLoading(false);
+    }   
+  };
+  const router = useRouter();
+  const handleSignOut = async () => {
+    await signOut({ redirect: false }); 
+    router.push('/login'); 
+  };
+
+  const handleEdit = (vehicle) => {
+    setSelectedVehicle(vehicle);
+    setIsModalOpen(true);
+  };
+ 
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <header className="flex h-16 items-center border-b bg-gray-100 px-6 dark:bg-gray-800">
+      <header className="flex h-16 items-center border-b bg-gray-100 px-6">
         <Link className="flex items-center gap-2" href="#">
           <CarIcon className="h-6 w-6" />
           <span className="text-lg font-semibold">Acme Car Dealership</span>
@@ -72,13 +167,13 @@ export function Inventory() {
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
       <div className="flex flex-1">
-        <div className="hidden border-r bg-gray-100/40 lg:block dark:bg-gray-800/40">
+        <div className="hidden border-r bg-gray-100/40 lg:block">
           <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex-1 overflow-auto py-2">
               <nav className="grid items-start px-4 text-sm font-medium">
@@ -93,13 +188,7 @@ export function Inventory() {
                   href="/inventory">
                   <CarIcon className="h-4 w-4"/>
                   Inventory
-                </Link>
-                <Link
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                  href="/popup">
-                  <CarIcon className="h-4 w-4" />
-                  Add new car
-                </Link>
+                </Link>               
                 <Link
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
                   href="/dealerform">
@@ -119,37 +208,52 @@ export function Inventory() {
         <div className="flex flex-1 flex-col">
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Inventory</CardTitle>
-                <CardDescription>View and manage the current inventory of vehicles.</CardDescription>
-              </CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Inventory</CardTitle>
+              <CardDescription>View and manage the current inventory of vehicles.</CardDescription>
+            </div>
+            <Button className="bg-green-500 hover:bg-green-600 text-white" size="sm" onClick={() => setIsModalOpen(true)}>
+              Add New Car
+            </Button>
+          </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Vehicle</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
+                      <TableHead style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {vehicles.map(vehicle => (
                       <TableRow key={vehicle.id}>
                         <TableCell>{vehicle.year} {vehicle.carMake} {vehicle.model}</TableCell>
-                        <TableCell />
-                        <TableCell>
+                        <TableCell>{vehicle.status}</TableCell> 
+                        <TableCell style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button size="sm" variant="outline">
+                              <Button size="sm" variant="outline" disabled={loading}>
                                 Change Status
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              <DropdownMenuItem>Available</DropdownMenuItem>
-                              <DropdownMenuItem>Reserved</DropdownMenuItem>
-                              <DropdownMenuItem>Sold</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Available')}>Available</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Reserved')}>Reserved</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Sold')}>Sold</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => handleDeleteConfirmation(vehicle.id)}
+                          >
+                            Remove
+                          </Button>
+                          <Button size="sm" onClick={() => handleEdit(vehicle)} >
+                                Editar
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -159,11 +263,45 @@ export function Inventory() {
             </Card>              
           </main>
         </div>
+        <DeleteConfirmation 
+        isOpen={deleteConfirmation.isOpen}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
+      </div>
+      <Modal isOpen={isModalOpen} onClose={() => {
+        setIsModalOpen(false);
+        setSelectedVehicle(null);
+      }}>
+        <Popup
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedVehicle(null);
+          }}
+          vehicleToEdit={selectedVehicle}
+        />
+      </Modal>
+    </div>
+    
+  );
+  
+}
+function DeleteConfirmation({ isOpen, onConfirm, onCancel }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div className="bg-white p-6 rounded-lg">
+        <h2 className="text-xl font-bold mb-4">Confirm Deletion</h2>
+        <p className="mb-4">Are you sure you want to delete this vehicle?</p>
+        <div className="flex justify-end gap-4">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="destructive" onClick={onConfirm}>Delete</Button>
+        </div>
       </div>
     </div>
   );
 }
-
 function CarIcon(props) {
   return (
     <svg
