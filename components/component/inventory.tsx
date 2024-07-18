@@ -1,15 +1,16 @@
 "use client";
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuContent, DropdownMenu } from "@/components/ui/dropdown-menu";
+import { DropdownMenuTrigger, DropdownMenuItem, DropdownMenuContent, DropdownMenu } from "@/components/ui/dropdown-menu";
 import { CardTitle, CardDescription, CardHeader, CardContent, Card } from "@/components/ui/card";
 import { TableHead, TableRow, TableHeader, TableCell, TableBody, Table } from "@/components/ui/table";
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import {  useSession } from 'next-auth/react';
 import Modal from './Modal';
 import { Popup } from './popup';
+import { Input } from "@/components/ui/input";
 
 interface Vehicle {
   id: number;
@@ -35,6 +36,8 @@ export function Inventory() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, vehicleId: null });
+  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
 
 
@@ -52,6 +55,20 @@ export function Inventory() {
         console.error("There was an error fetching the data!", error);
       });
   }, []);
+
+  useEffect(() => {
+    if (vehicles) {
+      const filtered = vehicles.filter(vehicle =>
+        (vehicle.carMake?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+        (vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+        (vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase()) || '')||
+        (vehicle.year?.toString().includes(searchTerm.toLowerCase()) || '')
+      );
+      setFilteredVehicles(filtered);
+    } else {
+      setFilteredVehicles([]);
+    }
+  }, [searchTerm, vehicles]);
 
   const handleDeleteConfirmation = (vehicleId) => {
     setDeleteConfirmation({ isOpen: true, vehicleId });
@@ -126,52 +143,15 @@ export function Inventory() {
     }   
   };
   const router = useRouter();
-  const handleSignOut = async () => {
-    await signOut({ redirect: false }); 
-    router.push('/login'); 
-  };
 
   const handleEdit = (vehicle) => {
     setSelectedVehicle(vehicle);
     setIsModalOpen(true);
   };
+
  
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <header className="flex h-16 items-center border-b bg-gray-100 px-6">
-        <Link className="flex items-center gap-2" href="#">
-          <CarIcon className="h-6 w-6" />
-          <span className="text-lg font-semibold">Acme Car Dealership</span>
-        </Link>
-        <div className="ml-auto flex items-center gap-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="rounded-full" size="icon" variant="ghost">
-                <img
-                  alt="Avatar"
-                  className="rounded-full"
-                  height="32"
-                  src="/placeholder.svg"
-                  style={{
-                    aspectRatio: "32/32",
-                    objectFit: "cover",
-                  }}
-                  width="32"
-                />
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+    <div className="flex min-h-screen w-full flex-col">      
       <div className="flex flex-1">
         <div className="hidden border-r bg-gray-100/40 lg:block">
           <div className="flex h-full max-h-screen flex-col gap-2">
@@ -218,47 +198,60 @@ export function Inventory() {
             </Button>
           </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vehicles.map(vehicle => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell>{vehicle.year} {vehicle.carMake} {vehicle.model}</TableCell>
-                        <TableCell>{vehicle.status}</TableCell> 
-                        <TableCell style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="sm" variant="outline" disabled={loading}>
-                                Change Status
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Available')}>Available</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Reserved')}>Reserved</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Sold')}>Sold</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            onClick={() => handleDeleteConfirmation(vehicle.id)}
-                          >
-                            Remove
-                          </Button>
-                          <Button size="sm" onClick={() => handleEdit(vehicle)} >
-                                Editar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="mb-4">
+              <Input
+                placeholder="Search by make, model, year, or VIN"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+             </div>
+             <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-1/4">Vehicle</TableHead>
+                  <TableHead className="w-1/6">Color</TableHead>
+                  <TableHead className="w-1/6">VIN</TableHead>
+                  <TableHead className="w-1/6">Status</TableHead>
+                  <TableHead className="w-1/4 text-center">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredVehicles.map(vehicle => (
+                  <TableRow key={vehicle.id}>
+                    <TableCell className="w-1/4">{vehicle.year} {vehicle.carMake} {vehicle.model}</TableCell>
+                    <TableCell className="w-1/6">{vehicle.color}</TableCell>
+                    <TableCell className="w-1/6">{vehicle.vin}</TableCell>
+                    <TableCell className="w-1/6">{vehicle.status}</TableCell> 
+                    <TableCell className="w-1/4">
+                      <div className="flex justify-center gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" disabled={loading}>
+                              Change Status
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Available')}>Available</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Reserved')}>Reserved</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Sold')}>Sold</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleDeleteConfirmation(vehicle.id)}
+                        >
+                          Remove
+                        </Button>
+                        <Button size="sm" onClick={() => handleEdit(vehicle)}>
+                          Edit
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
               </CardContent>
             </Card>              
           </main>

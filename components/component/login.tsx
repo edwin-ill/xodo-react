@@ -38,10 +38,12 @@ export function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-cover bg-center" style={{ backgroundImage: "url('https://your-background-image-url.jpg')" }}>
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+    <div className="flex items-center justify-center h-screen relative">
+      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://cdn.motor1.com/images/mgl/2NA6qM/s1/2024-honda-cr-v-sport-l.jpg')" }}></div>
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/30"></div>
+      <div className="relative z-10 w-full max-w-2xl p-10 bg-white rounded-lg shadow-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Login</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Login</h1>
         </div>
         {error && <p className="text-red-500 text-center">{error}</p>}
         <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
@@ -53,7 +55,7 @@ export function Login() {
               type="email"
               id="email"
               autoComplete="email"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -67,7 +69,7 @@ export function Login() {
               type="password"
               id="password"
               autoComplete="current-password"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -79,14 +81,14 @@ export function Login() {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                 Remember me
               </label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <a href="#" className="font-medium text-red-600 hover:text-red-500">
                 Forgot your password?
               </a>
             </div>
@@ -94,7 +96,7 @@ export function Login() {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               disabled={loading}
             >
               {loading ? 'Loading...' : 'Sign In'}

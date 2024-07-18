@@ -3,6 +3,14 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Provider from "./Provider";
 import { ThemeProvider } from "next-themes";
+import Link from "next/link";
+import { CarIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { signOut } from "next-auth/react";
+import router from "next/router";
+import { Header } from "@/components/component/header";
+import { ClientLayout } from "@/components/component/ClientLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +29,9 @@ export default function RootLayout({
       <body className={inter.className}>
       <ThemeProvider defaultTheme="light" attribute="class">
         <Provider>
+        <ClientLayout>
         {children}
+        </ClientLayout>
         </Provider>
         </ThemeProvider>
       </body>

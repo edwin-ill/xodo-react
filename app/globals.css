@@ -50,7 +50,7 @@ body {
 
 .carousel {
   width: 100%;
-  padding-bottom: 100%; /* This maintains a 1:1 aspect ratio */
+  padding-bottom: 100%;
   position: relative;
 }
 
@@ -60,5 +60,17 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Ensures the image covers the container without distortion */
+  object-fit: cover; 
+}
+
+.blur-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: inherit;
+  filter: blur(1002px);
+  z-index: -1;
 }

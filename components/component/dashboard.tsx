@@ -70,40 +70,6 @@ export function Dashboard() {
   return (
     <ThemeProvider>
       <div className="flex min-h-screen w-full flex-col">
-        <header className="flex h-16 items-center border-b bg-gray-100 px-6">
-          <Link className="flex items-center gap-2" href="#">
-            <CarIcon className="h-6 w-6"/>
-            <span className="text-lg font-semibold">Acme Car Dealership</span>
-          </Link>
-          <div className="ml-auto flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="rounded-full" size="icon" variant="ghost">
-                  <img
-                    alt="Avatar"
-                    className="rounded-full"
-                    height="32"
-                    src="/placeholder.svg"
-                    style={{
-                      aspectRatio: "32/32",
-                      objectFit: "cover",
-                    }}
-                    width="32"
-                  />
-                  <span className="sr-only">Toggle user menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Logout</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
         <div className="flex flex-1">
           <div className="hidden border-r bg-gray-100/40 lg:block">
             <div className="flex h-full max-h-screen flex-col gap-2">
