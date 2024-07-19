@@ -1,20 +1,25 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
+import Sweet from 'sweetalert2';
 
 export function Login() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push('/dashboard');
+    }
+  }, [status, session, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
     try {
       const result = await signIn('credentials', {
         redirect: false,
@@ -23,19 +28,44 @@ export function Login() {
       });
 
       if (result?.error) {
-        setError(result.error || 'Invalid email or password.');
+        Sweet.fire({
+          title: 'Hubo un error iniciando sesión',
+          text: `Email o contraseña inválidos`,
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+        
       } else if (result?.ok) {
         router.push('/dashboard');
       } else {
-        setError('An error occurred. Please try again later.');
+        Sweet.fire({
+          title: 'Hubo un error iniciando sesión',
+          text: `Un error desconocido ocurrió. Por favor inténtelo de nuevo luego.`,
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
       }
     } catch (error) {
-      console.error('Sign in error:', error);
-      setError('An error occurred. Please try again later.');
+      if (error instanceof Error) {
+        Sweet.fire({
+          title: 'Hubo un error iniciando sesión',
+          text: `${error.message}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      } else {
+        Sweet.fire({
+          title: 'Hubo un error iniciando sesión',
+          text: `Un error desconocido ocurrió. Por favor intentelo de nuevo luego.`,
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
     }
 
     setLoading(false);
   };
+
 
   return (
     <div className="flex items-center justify-center h-screen relative">
@@ -45,7 +75,6 @@ export function Login() {
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900">Login</h1>
         </div>
-        {error && <p className="text-red-500 text-center">{error}</p>}
         <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">

@@ -1,4 +1,4 @@
-import { Inventory } from '@/components/component/inventory'
+import { Inventory } from '@/components/inventory'
 
 export default function Home() {
   return <Inventory/>

@@ -1,4 +1,4 @@
-import { Dealerform } from '@/components/component/dealerform'
+import { Dealerform } from '@/components/dealerform'
 
 export default function Home() {
   return <Dealerform/>

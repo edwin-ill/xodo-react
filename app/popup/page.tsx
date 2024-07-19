@@ -1,5 +1,12 @@
-import { Popup } from '@/components/component/popup'
+import { Popup } from '@/components/popup'
+import { useState } from 'react'
 
 export default function Home() {
-  return <Popup/>
+  const [isOpen, setIsOpen] = useState(true)
+
+  const handleClose = () => {
+    setIsOpen(false)
+  }
+
+  return isOpen ? <Popup onClose={handleClose} /> : null
 }

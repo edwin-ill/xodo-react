@@ -1,7 +1,7 @@
 import React from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { DotButton, useDotButton } from '@/components/component/EmblaCarouselDotButton';
-import { PrevButton, NextButton, usePrevNextButtons } from '@/components/component/EmblaCarouselArrowButtons'
+import { DotButton, useDotButton } from '@/components/EmblaCarouselDotButton';
+import { PrevButton, NextButton, usePrevNextButtons } from '@/components/EmblaCarouselArrowButtons'
 import '@/app/embla.css';
 import { Button } from "@/components/ui/button";
 

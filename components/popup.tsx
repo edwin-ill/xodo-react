@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SelectValue, SelectTrigger, SelectItem, SelectContent, Select } from "@/components/ui/select";
 import Modal from './Modal';
-import crypto from 'crypto';
+import Sweet from 'sweetalert2';
+import { useSession } from 'next-auth/react';
 
 const basecloudinaryUrl = "https://api.cloudinary.com/v1_1/diyhxd1my"
 const uploadImgUrl = `${basecloudinaryUrl}/image/upload`;
@@ -21,7 +22,6 @@ const baseUrl = 'https://localhost:7126/api/v1';
 const vehicleUrl = `${baseUrl}/Vehicle`;
 const imageUrl = `${baseUrl}/Image`;
 const cloudName = 'diyhxd1my';
-const apiKey = '347341592221484';
 
 
 interface VehicleImage {
@@ -65,12 +65,14 @@ type PatchOperation = {
 export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const {data : session} = useSession();
   const [vehicleData, setVehicleData] = useState<Partial<Vehicle>>({});
   const [vehicleImages, setVehicleImages] = useState<VehicleImage[]>([]);
   const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
   const [imagesToDelete, setImagesToDelete] = useState<number[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [localImagePreviews, setLocalImagePreviews] = useState<string[]>([]);
+  const [dealerships, setDealerships] = useState<Array<{id: number, name: string, address: string}>>([]);
 
   const handleNavigate = () => {
     router.push('/inventory');
@@ -82,15 +84,58 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       setVehicleData(vehicleToEdit);
       setVehicleImages(vehicleToEdit.vehicleImages || []);
       setExistingImages(vehicleToEdit.vehicleImages?.map(img => img.imageUrl) || []);
-      console.log("Vehicle images set:", vehicleToEdit.vehicleImages);
     }
   }, [vehicleToEdit]);
+
+  useEffect(() => {
+    fetchDealerships();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setVehicleData(prev => ({ ...prev, [name]: value }));
   };
 
+  const fetchDealerships = async () => {
+    try {
+      const response = await axios.get('https://localhost:7126/api/v1/Dealership');
+      if (response.data.succeeded) {
+        setDealerships(response.data.data
+          .filter((dealership: any) => dealership.name && dealership.name.trim() !== '')
+          .map((dealership: any) => ({
+            id: dealership.id,
+            name: dealership.name,
+            address: dealership.address
+          }))
+        );
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.Message || 'Un error desconocido ocurrió';
+        Sweet.fire({
+          title: 'Hubo un error encontrando los dealers',
+          text: `${errorMessage}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
+      if (error instanceof Error) {
+        Sweet.fire({
+          title: 'Hubo un error encontrando los dealers',
+          text: `${error.message}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      } else {
+        Sweet.fire({
+          title: 'Hubo un error encontrando los dealers',
+          text: `Un error desconocido ocurrió`,
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
+    }
+  };
  
   const uploadImageToCloudinary = async (image: File) => {
     const formData = new FormData();
@@ -101,11 +146,9 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       secure_url: response.data.secure_url,
       public_id: response.data.public_id,
     };
-  }; 
+  };   
  
-  
- 
-  const handleDeleteImage = useCallback(async (id: number, publicId: string) => {
+  const handleDeleteImage = useCallback(async (id: number) => {
     try {    
       
       await axios.delete(`https://localhost:7126/api/v1/Image/${id}`);
@@ -116,9 +159,31 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
         }
         return prev;
       });
-      console.log("Image deleted successfully");
     } catch (error) {
-      console.error("Error deleting image:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.Message || 'Un error desconocido ocurrió';
+        Sweet.fire({
+          title: 'Hubo un error borrando la imagen',
+          text: `${errorMessage}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
+      else if (error instanceof Error) {
+        Sweet.fire({
+          title: 'Hubo un error borrando la imagen',
+          text: `${error.message}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      } else {
+        Sweet.fire({
+          title: 'Hubo un error borrando la imagen',
+          text: `Un error desconocido ocurrió`,
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
     }
   }, []);
 
@@ -141,9 +206,6 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
     try {
       const response = await axios.get(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/${vehicleData.vin}?format=json`);
       const data = response.data.Results[0];
-
-      console.log("API Response:", data);
-
       setVehicleData(prev => ({
         ...prev,
         carMake: data.Make || '',
@@ -154,17 +216,10 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
         description: `${data.Make} ${data.Model} ${data.ModelYear} - ${data.EngineHP} HP, ${data.FuelTypePrimary} engine`
       }));
 
-      console.log("Setting CarMake:", data.Make);
-      console.log("Setting Model:", data.Model);
-      console.log("Setting Year:", data.ModelYear);
-      console.log("Setting EngineType:", data.EngineConfiguration);
-      console.log("Setting TransmissionType:", data.TransmissionStyle);
-
       const makes = ["HONDA", "TOYOTA", "HYUNDAI", "KIA", "FORD"];
       const matchedMake = makes.find(make => make === data.Make.toUpperCase());
       if (matchedMake) {
         setVehicleData(prev => ({ ...prev, carMake: matchedMake }));
-        console.log("Matched CarMake:", matchedMake);
       }
 
       if (data.EngineConfiguration) {
@@ -178,7 +233,6 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
         } else if (engineConfig === 'in-line' && data.EngineCylinders === '4') {
           setVehicleData(prev => ({ ...prev, engineType: 'inline4' }));
         }
-        console.log("Matched EngineType:", engineConfig);
       }
 
       if (data.TransmissionStyle) {
@@ -188,10 +242,41 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
         } else if (transmissionStyle.includes('manual')) {
           setVehicleData(prev => ({ ...prev, transmissionType: 'manual' }));
         }
-        console.log("Matched TransmissionType:", transmissionStyle);
+      }
+      if(data.Make == null)
+      {
+        Sweet.fire({
+          title: 'No se encontró el vehículo',
+          text: `El vehiculo especificado por el VIN no se pudo encontrar`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
       }
     } catch (error) {
-      console.error('Error fetching VIN data:', error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.Message || 'Un error desconocido ocurrió';
+        Sweet.fire({
+          title: 'Hubo un error buscando el VIN',
+          text: `${errorMessage}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
+      else if (error instanceof Error) {
+        Sweet.fire({
+          title: 'Hubo un error buscando el VIN',
+          text: `${error.message}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      } else {
+        Sweet.fire({
+          title: 'Hubo un error buscando el VIN',
+          text: `Un error desconocido ocurrió`,
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
     }
   };
   useEffect(() => {
@@ -199,8 +284,6 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       localImagePreviews.forEach(preview => {
         URL.revokeObjectURL(preview);
       });
-      
-
     };
   }, [localImagePreviews]);
 
@@ -221,60 +304,137 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
   
     return patchOperations;
   };  
+  const checkEmptyFields = () => {
+    const requiredFields = [
+      { name: 'vin', label: 'VIN' },
+      { name: 'carMake', label: 'Car Make' },
+      { name: 'model', label: 'Model' },
+      { name: 'year', label: 'Year' },
+      { name: 'color', label: 'Color' },
+      { name: 'price', label: 'Price' },
+      { name: 'engineType', label: 'Engine Type' },
+      { name: 'transmissionType', label: 'Transmission Type' },
+      { name: 'mileage', label: 'Mileage' },
+      { name: 'vehicleType', label: 'Vehicle Type' },
+    ];
 
+    const emptyFields = requiredFields.filter(field => !vehicleData[field.name as keyof Partial<Vehicle>]);
+
+    if (vehicleImages.length === 0 && !filesToUpload?.length) {
+      emptyFields.push({ name: 'images', label: 'Images' });
+    }
+  
+
+    return emptyFields;
+  };
   const handleSubmit = async () => {
+    const emptyFields = checkEmptyFields();
+    if (emptyFields.length > 0) {
+      Sweet.fire({
+        icon: 'warning',
+        title: 'Campos faltantes',
+        text: `Por favor llena los siguientes campos: ${emptyFields.map(field => field.label).join(', ')}`,
+        confirmButtonColor:'#d30000'
+      });
+      return;
+    }
     try {
       let vehicleId: number | null = null;
       if (isEditing && vehicleToEdit) {
         const patchOperations = getPatchOperations(vehicleToEdit, vehicleData);
         await axios.patch(`${vehicleUrl}/${vehicleToEdit.id}`, patchOperations, {
-          headers: { 'Content-Type': 'application/json-patch+json' }
+          headers: {
+            'Authorization': `Bearer ${session?.user.jwToken}`,
+            'Content-Type': 'application/json-patch+json' }
         });
         vehicleId = vehicleToEdit.id;
-        console.log(`Vehicle updated with ID: ${vehicleId}`);
       } else {
         const vehiclePayload = {
           ...vehicleData,
-          dealershipId: 1, 
           status: 'Available'
         };
         const response = await axios.post(vehicleUrl, vehiclePayload);
         vehicleId = response.data.id;
-        console.log(`New vehicle created with ID: ${vehicleId}`);
       }
 
       if (vehicleId && filesToUpload?.length) {
-        console.log(`Uploading ${filesToUpload.length} images for vehicle ${vehicleId}`);
         
         for (let i = 0; i < filesToUpload.length; i++) {
           try {
             const file = filesToUpload[i];
-            console.log(`Uploading image ${i + 1} to Cloudinary...`);
             const imageUrl = await uploadImageToCloudinary(file);
-            console.log(`Image ${i + 1} uploaded to Cloudinary. URL: ${imageUrl.secure_url}`);
-            console.log(imageUrl);
-            
-            console.log(`Posting image ${i + 1} to backend...`);
             const imageResponse = await axios.post('https://localhost:7126/api/v1/Image/', {
               imageUrl: imageUrl.secure_url,
               vehicleId: vehicleId,
               publicId: imageUrl.public_id 
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${session?.user.jwToken}`
+              }
             });            
-            console.log(`Image ${i + 1} posted to backend. Response:`, imageResponse.data);
           } catch (error) {
-            console.error(`Error uploading image ${i + 1}:`, error);
+            if (axios.isAxiosError(error)) {
+              const errorMessage = error.response?.data?.Message || 'Un error desconocido ocurrió';
+              Sweet.fire({
+                title: 'Hubo un error subiendo la imagen',
+                text: `${errorMessage}`, 
+                icon: 'error',
+                confirmButtonColor:'#d30000'
+              });
+            }
+            else if (error instanceof Error) {
+              Sweet.fire({
+                title: `Hubo un error subiendo la imagen ${i + 1}`,
+                text: `${error.message}`, 
+                icon: 'error',
+                confirmButtonColor:'#d30000'
+              });
+            } else {
+              Sweet.fire({
+                title: `Hubo un subiendo la imagen ${i + 1}`,
+                text: `Un error desconocido ocurrió`,
+                icon: 'error',
+                confirmButtonColor:'#d30000'
+              });
+            }
           }
         }
       } else {
-        console.log(`No images to upload for vehicle ${vehicleId}`);
+        
       }
-  
-      console.log(`Vehicle ${isEditing ? 'updated' : 'added'} successfully`);
+      Sweet.fire({
+        title: `El vehículo se ${isEditing ? 'editó' : 'agregó'} correctamente`,
+        text: `La operación fue un exito`,
+        icon: 'success',
+        confirmButtonColor:'#d30000'
+      });
       handleNavigate();
       onClose();
     } catch (error) {
-      console.error('Error handling vehicle submission:', error);
-      // Consider adding user-friendly error handling here
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.Message || 'An unknown error occurred';
+        Sweet.fire({
+          title: 'Hubo un error agregando el vehículo',
+          text: `El siguiente error ocurrió: ${errorMessage}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      } else if (error instanceof Error) {
+        Sweet.fire({
+          title: 'Hubo un error agregando el vehículo',
+          text: `El siguiente error ocurrió: ${error.message}`, 
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      } else {
+        Sweet.fire({
+          title: 'Hubo un error agregando el vehículo',
+          text: 'Un error desconocido ocurrió',
+          icon: 'error',
+          confirmButtonColor:'#d30000'
+        });
+      }
     }
   };
 
@@ -327,6 +487,25 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       <Input id="mileage" name="mileage" value={vehicleData.mileage || ''} onChange={handleInputChange} />
     </div>
     <div>
+      <Label htmlFor="dealershipId">Dealership</Label>
+      <Select 
+        name="dealershipId" 
+        value={vehicleData.dealershipId?.toString() || ''}
+        onValueChange={(value) => setVehicleData(prev => ({ ...prev, dealershipId: parseInt(value) }))}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select a dealership" />
+        </SelectTrigger>
+        <SelectContent>
+          {dealerships.map((dealership) => (
+            <SelectItem key={dealership.id} value={dealership.id.toString()}>
+            {dealership.name}, {dealership.address}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+    <div>
       <Label htmlFor="vehicleType">Vehicle Type</Label>
       <Select name="vehicleType" value={vehicleData.vehicleType || ''} onValueChange={(value) => setVehicleData(prev => ({ ...prev, vehicleType: value }))}>
         <SelectTrigger>
@@ -356,10 +535,7 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
                     className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
                     onClick={() => 
                       {
-                        console.log("Imagenes de lo vehiculo:", vehicleImages)
-                        console.log("imagene ma adentro", img)
-                      console.log("Deleting image:", img.id, img.public_id);
-                      img.id && handleDeleteImage(img.id, img.public_id)
+                      img.id && handleDeleteImage(img.id)
                     }}
                   >
                     X

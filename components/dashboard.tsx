@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from "next/link";
 import { ThemeProvider } from 'next-themes';
-import { Button } from "@/components/ui/button";
-import { DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuContent, DropdownMenu } from "@/components/ui/dropdown-menu";
 import { CardTitle, CardHeader, CardContent, Card} from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useSession } from 'next-auth/react';
+import { LayoutDashboardIcon, CarIcon, UsersIcon, SettingsIcon } from 'lucide-react';
+import Sweet from 'sweetalert2';
 
 interface Vehicle {
   id: number;
@@ -52,16 +52,39 @@ export function Dashboard() {
   const [error, setError] = useState<Error | null>(null);
   const {data : session} = useSession();
 
+ 
   useEffect(() => {
     setIsLoading(true);
     axios.get('https://localhost:7126/api/v1/Vehicle')
       .then(response => {
-        console.log("Dashboard data:", response.data);
         setDashboardData(response.data);
         setIsLoading(false);
       })
       .catch(error => {
-        console.error("There was an error fetching the data!", error);
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data?.Message || 'Un error desconocido ocurrió';
+          Sweet.fire({
+            title: 'Hubo un error encontrando la información',
+            text: `${errorMessage}`, 
+            icon: 'error',
+            confirmButtonColor:'#d30000'
+          });
+        }
+        else if (error instanceof Error) {
+          Sweet.fire({
+            title: 'Hubo un error encontrando la información',
+            text: `${error.message}`, 
+            icon: 'error',
+            confirmButtonColor:'#d30000'
+          });
+        } else {
+          Sweet.fire({
+            title: 'Hubo un error encontrando la información',
+            text: `Un error desconocido ocurrió`,
+            icon: 'error',
+            confirmButtonColor:'#d30000'
+          });
+        }
         setError(error);
         setIsLoading(false);
       });
@@ -95,7 +118,7 @@ export function Dashboard() {
                   </Link>     
                   <Link
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                    href="#">
+                    href="/settings">
                     <SettingsIcon className="h-4 w-4" />
                     Settings
                   </Link>
@@ -221,8 +244,6 @@ export function Dashboard() {
                           prices: number[];
                         }>);
 
-                        console.log("Grouped Data:", groupedData);  
-
                         return Object.values(groupedData)
                           .sort((a, b) => 
                             a.make.localeCompare(b.make) || 
@@ -260,92 +281,4 @@ export function Dashboard() {
   );
 }
 
-  function CarIcon(props) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-        <circle cx="7" cy="17" r="2" />
-        <path d="M9 17h6" />
-        <circle cx="17" cy="17" r="2" />
-      </svg>
-    )
-  }
-  
-  
-  function LayoutDashboardIcon(props) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect width="7" height="9" x="3" y="3" rx="1" />
-        <rect width="7" height="5" x="14" y="3" rx="1" />
-        <rect width="7" height="9" x="14" y="12" rx="1" />
-        <rect width="7" height="5" x="3" y="16" rx="1" />
-      </svg>
-    )
-  }
-  
-  
-  function SettingsIcon(props) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    )
-  }
-  
-  
-  function UsersIcon(props) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    )
-  }
 
