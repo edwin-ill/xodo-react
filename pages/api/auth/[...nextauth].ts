@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import axios from 'axios';
 
 process.env.NEXTAUTH_SECRET = "a19b92f6fd5fe979b45e83992d09fbf7"
+
 export default NextAuth({
   providers: [
     CredentialsProvider({
@@ -13,7 +14,7 @@ export default NextAuth({
       },
       async authorize(credentials) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        
+        try {
           const response = await axios.post('https://localhost:7126/api/account/Authenticate', {
             email: credentials?.email,
             password: credentials?.password,
@@ -25,15 +26,17 @@ export default NextAuth({
           } else {
             return null;
           }
+        } catch (error) {
+          return null;
+        }
       },
     }),
   ],
-  callbacks:{
-    async jwt({token, user})
-    {
-      return{ ...token, ...user};
+  callbacks: {
+    async jwt({ token, user }) {
+      return { ...token, ...user };
     },
-    async session({ session, token, user}) {
+    async session({ session, token }) {
       session.user = token as any;
       return session;
     }
@@ -41,6 +44,4 @@ export default NextAuth({
   pages: {
     signIn: '/login',
   }
-
 });
- 

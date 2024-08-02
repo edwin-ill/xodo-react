@@ -9,10 +9,10 @@ import { useRouter } from 'next/navigation';
 
 const url = "https://localhost:7126/api/v1/Dealership";
 
-export function Dealerform() {
+export function Dealerform({ onClose }) {
   const router = useRouter();
 const handleNavigate = () => {
-  router.push('/inventory');
+  router.push('/settings');
 };
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -31,6 +31,7 @@ const handleNavigate = () => {
         email : email,
       });
       console.log(response.data);
+      onClose();
     }
     catch(error)
     {
@@ -39,12 +40,12 @@ const handleNavigate = () => {
   }   
 
   return (
-    <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+    <form className="space-y-6" onSubmit={handleSubmit}>
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="bg-gray-900 text-white p-6 relative">
-        <CardTitle className="text-2xl font-bold">Add New Dealership</CardTitle>
-        <CardDescription className="text-gray-300">Enter the details of the new Dealership.</CardDescription>
-        <Button className="absolute top-4 right-4 rounded-full" size="icon" variant="ghost" onClick={handleNavigate}>        
+        <CardTitle className="text-2xl font-bold">Agregar nuevo concesionario</CardTitle>
+        <CardDescription className="text-gray-300">Ingresa los datos del nuevo Concesionario.</CardDescription>
+        <Button className="absolute top-4 right-4 rounded-full" size="icon" variant="ghost" onClick={onClose}>        
           <XIcon className="w-5 h-5" />          
         </Button>
       </CardHeader>
@@ -52,7 +53,7 @@ const handleNavigate = () => {
         <div className="grid grid-cols-2 gap-6">       
           <div className="space-y-4">
             <Label className="text-lg font-medium" htmlFor="name">
-            Name
+            Nombre
             </Label>
             <Input
               className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
@@ -66,7 +67,7 @@ const handleNavigate = () => {
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-4">
             <Label className="text-lg font-medium" htmlFor="Address">
-              Address
+              Dirección
             </Label>
             <Input
               className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
@@ -78,7 +79,7 @@ const handleNavigate = () => {
           </div>
           <div className="space-y-4">
             <Label className="text-lg font-medium" htmlFor="phoneNumber">
-            Phone Number
+            Número de teléfono
             </Label>
             <Input
               className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
@@ -92,7 +93,7 @@ const handleNavigate = () => {
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-4">
             <Label className="text-lg font-medium" htmlFor="email">
-            Email
+            Correo electrónico
             </Label>
             <Input
               className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
@@ -104,7 +105,7 @@ const handleNavigate = () => {
           </div>
           <div className="space-y-4">
             <Label className="text-lg font-medium" htmlFor="city">
-            City
+            Ciudad
             </Label>
             <Input
               className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
@@ -120,7 +121,7 @@ const handleNavigate = () => {
         <Button
           className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
           type="submit">
-          Save dealership
+          Guardar concesionario
         </Button>        
       </CardFooter>      
     </Card>

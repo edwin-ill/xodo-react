@@ -12,8 +12,13 @@ export function Login() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (status === "authenticated") {
+    console.log('Status:', status);
+    console.log('Session:', session);
+    if (status === "authenticated" && session?.user) {
+      console.log('Authenticated, redirecting to dashboard...');
       router.push('/dashboard');
+    } else {
+      console.log('Not authenticated or session not established yet');
     }
   }, [status, session, router]);
 
@@ -27,16 +32,27 @@ export function Login() {
         password       
       });
 
+      console.log('Sign-in result:', result);
+
       if (result?.error) {
         Sweet.fire({
           title: 'Hubo un error iniciando sesión',
-          text: `Email o contraseña inválidos`,
+          text: `${result?.error}`,
           icon: 'error',
           confirmButtonColor:'#d30000'
         });
-        
       } else if (result?.ok) {
-        router.push('/dashboard');
+        Sweet.fire({
+          icon: 'success',
+          title: '¡Inicio de sesión exitoso!',
+          text: 'Redirigiendo al dashboard...',
+          timer: 1000,
+          timerProgressBar: true,
+          showConfirmButton: false
+        });
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1000);
       } else {
         Sweet.fire({
           title: 'Hubo un error iniciando sesión',
@@ -65,7 +81,6 @@ export function Login() {
 
     setLoading(false);
   };
-
 
   return (
     <div className="flex items-center justify-center h-screen relative">

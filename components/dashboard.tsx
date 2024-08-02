@@ -108,19 +108,13 @@ export function Dashboard() {
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
                     href="/inventory">
                     <CarIcon className="h-4 w-4"/>
-                    Inventory
-                  </Link>        
-                  <Link
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                    href="/dealerform">
-                    <UsersIcon className="h-4 w-4" />
-                    Add new dealership
-                  </Link>     
+                    Inventario
+                  </Link>      
                   <Link
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
                     href="/settings">
                     <SettingsIcon className="h-4 w-4" />
-                    Settings
+                    Configuración
                   </Link>
                 </nav>
               </div>
@@ -131,75 +125,66 @@ export function Dashboard() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
+                    <CardTitle className="text-sm font-medium">Número de vehículos</CardTitle>
                     <CarIcon className="h-4 w-4 text-gray-500" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{dashboardData?.data.length || 0}</div>
-                    <p className="text-xs text-gray-500">Total number of vehicles</p>
+                    <p className="text-xs text-gray-500">Número total de vehículos</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Available Vehicles</CardTitle>
+                    <CardTitle className="text-sm font-medium">Vehículos disponibles</CardTitle>
                     <CarIcon className="h-4 w-4 text-gray-500" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {dashboardData?.data.filter(v => v.status === "Available").length || 0}
+                      {dashboardData?.data.filter(v => v.status === "Disponible").length || 0}
                     </div>
-                    <p className="text-xs text-gray-500">Vehicles in stock</p>
+                    <p className="text-xs text-gray-500">Vehículos en stock</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Sold Vehicles</CardTitle>
+                    <CardTitle className="text-sm font-medium">Vehículos vendidos</CardTitle>
                     <CarIcon className="h-4 w-4 text-gray-500" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {dashboardData?.data.filter(v => v.status == "Sold").length || 0}
+                      {dashboardData?.data.filter(v => v.status == "Vendido").length || 0}
                     </div>
-                    <p className="text-xs text-gray-500">Reserved vehicles</p>
+                    <p className="text-xs text-gray-500">Vehículos con estado de venta</p>
                   </CardContent>
                 </Card>                
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Inventory Management</CardTitle>
+                    <CardTitle className="text-sm font-medium">Administración de inventario</CardTitle>
                     <CarIcon className="h-4 w-4 text-gray-500" />
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-2">
                       <div className="flex items-center justify-between">
-                        <span>New Vehicles</span>
+                        <span>Vehículos nuevos</span>
                         <span className="font-medium">
                           {dashboardData?.data.filter(v => v.vehicleType === "1").length || 0}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Reserved Vehicles</span>
+                        <span>Vehículos reservados</span>
                         <span className="font-medium">
-                          {dashboardData?.data.filter(v => v.status == "Reserved").length || 0}
+                          {dashboardData?.data.filter(v => v.status == "Reservado").length || 0}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Total Vehicles</span>
+                        <span>Todos los vehículos</span>
                         <span className="font-medium">{dashboardData?.data.length || 0}</span>
                       </div>
                     </div>
                   </CardContent>
-                </Card>               
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Performance</CardTitle>
-                    <CarIcon className="h-4 w-4 text-gray-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <p>Add performance metrics here</p>
-                  </CardContent>
-                </Card>
+                </Card>                               
               </div>
               <div className="grid gap-4">
               <Tabs defaultValue="inventory">          
@@ -207,11 +192,11 @@ export function Dashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Make</TableHead>
-                        <TableHead>Model</TableHead>
-                        <TableHead>Year</TableHead>
-                        <TableHead>Count</TableHead>
-                        <TableHead>Price Range</TableHead>
+                        <TableHead>Marca</TableHead>
+                        <TableHead>Modelo</TableHead>
+                        <TableHead>Año</TableHead>
+                        <TableHead>Cantidad</TableHead>
+                        <TableHead>Rango de precios</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

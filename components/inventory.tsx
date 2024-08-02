@@ -175,7 +175,6 @@ export function Inventory() {
       const patchData = [
         { op: "replace", path: "/status", value: newStatus }
       ];
-      console.log('Authorization Header:', session?.user.jwToken);
       const response = await axios.patch(`https://localhost:7126/api/v1/Vehicle/${vehicleId}`, patchData, {
         headers: {
           'Authorization': `Bearer ${session?.user.jwToken}`,
@@ -204,8 +203,6 @@ export function Inventory() {
     setSelectedVehicle(vehicle);
     setIsModalOpen(true);
   };
-  
-
  
   return (
     <div className="flex min-h-screen w-full flex-col">      
@@ -224,19 +221,13 @@ export function Inventory() {
                   className="flex items-center gap-3 rounded-lg bg-gray-100 px-3 py-2 text-gray-900 transition-all hover:text-gray-900"
                   href="/inventory">
                   <CarIcon className="h-4 w-4"/>
-                  Inventory
-                </Link>               
-                <Link
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
-                  href="/dealerform">
-                  <UsersIcon className="h-4 w-4" />
-                  Add new dealership
-                </Link>                
+                  Inventario
+                </Link>              
                 <Link
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900"
                   href="/settings">
                   <SettingsIcon className="h-4 w-4" />
-                  Settings
+                  Configuración
                 </Link>
               </nav>
             </div>
@@ -247,17 +238,17 @@ export function Inventory() {
             <Card>
             <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Inventory</CardTitle>
-              <CardDescription>View and manage the current inventory of vehicles.</CardDescription>
+              <CardTitle>Inventario</CardTitle>
+              <CardDescription>Ver y gestionar el inventario actual de vehículos.</CardDescription>
             </div>
             <Button className="bg-green-500 hover:bg-green-600 text-white" size="sm" onClick={() => setIsModalOpen(true)}>
-              Add New Car
+              Agregar un vehículo nuevo
             </Button>
           </CardHeader>
               <CardContent>
               <div className="mb-4">
               <Input
-                placeholder="Search by make, model, year, or VIN"
+                placeholder="Busque por marca, modelo, año o VIN"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -265,11 +256,11 @@ export function Inventory() {
              <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1/4">Vehicle</TableHead>
+                  <TableHead className="w-1/4">Vehículo</TableHead>
                   <TableHead className="w-1/6">Color</TableHead>
                   <TableHead className="w-1/6">VIN</TableHead>
-                  <TableHead className="w-1/6">Status</TableHead>
-                  <TableHead className="w-1/4 text-center">Action</TableHead>
+                  <TableHead className="w-1/6">Estado</TableHead>
+                  <TableHead className="w-1/4 text-center">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -284,13 +275,13 @@ export function Inventory() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="outline" disabled={loading}>
-                              Change Status
+                              Cambiar estado
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Available')}>Available</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Reserved')}>Reserved</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Sold')}>Sold</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Disponible')}>Disponible</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Reservado')}>Reservado</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'Vendido')}>Vendido</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                         <Button 
@@ -313,10 +304,10 @@ export function Inventory() {
                                 }
                               })) }
                         >
-                          Remove
+                          Eliminar
                         </Button>
                         <Button size="sm" onClick={() => handleEdit(vehicle)}>
-                          Edit
+                          Editar
                         </Button>
                       </div>
                     </TableCell>

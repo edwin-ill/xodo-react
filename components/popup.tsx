@@ -100,38 +100,49 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
     try {
       const response = await axios.get('https://localhost:7126/api/v1/Dealership');
       if (response.data.succeeded) {
-        setDealerships(response.data.data
+        const fetchedDealerships = response.data.data
           .filter((dealership: any) => dealership.name && dealership.name.trim() !== '')
           .map((dealership: any) => ({
             id: dealership.id,
             name: dealership.name,
             address: dealership.address
-          }))
-        );
+          }));
+        setDealerships(fetchedDealerships);
+
+        if (fetchedDealerships.length === 0) {
+          Sweet.fire({
+            title: 'No se encontraron concesionarios',
+            text: 'Por favor, agregue un concesionario antes de continuar.',
+            icon: 'warning',
+            confirmButtonColor: '#d30000'
+          }).then(() => {
+            onClose();
+          });
+        }
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data?.Message || 'Un error desconocido ocurrió';
         Sweet.fire({
-          title: 'Hubo un error encontrando los dealers',
-          text: `${errorMessage}`, 
+          title: 'Hubo un error encontrando los concesionarios',
+          text: `${errorMessage}`,
           icon: 'error',
-          confirmButtonColor:'#d30000'
+          confirmButtonColor: '#d30000'
         });
       }
       if (error instanceof Error) {
         Sweet.fire({
-          title: 'Hubo un error encontrando los dealers',
-          text: `${error.message}`, 
+          title: 'Hubo un error encontrando los concesionarios',
+          text: `${error.message}`,
           icon: 'error',
-          confirmButtonColor:'#d30000'
+          confirmButtonColor: '#d30000'
         });
       } else {
         Sweet.fire({
-          title: 'Hubo un error encontrando los dealers',
-          text: `Un error desconocido ocurrió`,
+          title: 'Hubo un error encontrando los concesionarios',
+          text: 'Un error desconocido ocurrió',
           icon: 'error',
-          confirmButtonColor:'#d30000'
+          confirmButtonColor: '#d30000'
         });
       }
     }
@@ -442,8 +453,8 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
     <Modal isOpen={true} onClose={onClose}>
       <Card>
         <CardHeader className ="bg-gray-900 text-white p-6 relative">
-          <CardTitle  className="text-2xl font-bold">{isEditing ? 'Edit Vehicle' : 'Add Vehicle'}</CardTitle>
-          <CardDescription className="text-gray-300">Enter vehicle details below</CardDescription>
+          <CardTitle  className="text-2xl font-bold">{isEditing ? 'Editar vehículo' : 'Agregar vehículo'}</CardTitle>
+          <CardDescription className="text-gray-300">Ingrese los detalles del vehículo a continuación</CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
   <div className="grid grid-cols-3 gap-4">
@@ -451,19 +462,19 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       <Label htmlFor="vin">VIN</Label>
       <div className="flex">
         <Input id="vin" name="vin" value={vehicleData.vin || ''} onChange={handleInputChange} />
-        <Button onClick={handleVINLookup}>Lookup</Button>
+        <Button onClick={handleVINLookup}>Buscar</Button>
       </div>
     </div>
     <div>
-      <Label htmlFor="carMake">Car Make</Label>
+      <Label htmlFor="carMake">Marca del auto</Label>
       <Input id="carMake" name="carMake" value={vehicleData.carMake || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="model">Model</Label>
+      <Label htmlFor="model">Modelo</Label>
       <Input id="model" name="model" value={vehicleData.model || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="year">Year</Label>
+      <Label htmlFor="year">Año</Label>
       <Input id="year" name="year" value={vehicleData.year || ''} onChange={handleInputChange} />
     </div>
     <div>
@@ -471,30 +482,30 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       <Input id="color" name="color" value={vehicleData.color || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="price">Price</Label>
+      <Label htmlFor="price">Precio</Label>
       <Input id="price" name="price" value={vehicleData.price || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="engineType">Engine Type</Label>
+      <Label htmlFor="engineType">Tipo de motor</Label>
       <Input id="engineType" name="engineType" value={vehicleData.engineType || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="transmissionType">Transmission Type</Label>
+      <Label htmlFor="transmissionType">Tipo de transmisión</Label>
       <Input id="transmissionType" name="transmissionType" value={vehicleData.transmissionType || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="mileage">Mileage</Label>
+      <Label htmlFor="mileage">Millaje</Label>
       <Input id="mileage" name="mileage" value={vehicleData.mileage || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="dealershipId">Dealership</Label>
+      <Label htmlFor="dealershipId">Concesionario</Label>
       <Select 
         name="dealershipId" 
         value={vehicleData.dealershipId?.toString() || ''}
         onValueChange={(value) => setVehicleData(prev => ({ ...prev, dealershipId: parseInt(value) }))}
       >
         <SelectTrigger>
-          <SelectValue placeholder="Select a dealership" />
+          <SelectValue placeholder="Seleccione el concesionario" />
         </SelectTrigger>
         <SelectContent>
           {dealerships.map((dealership) => (
@@ -506,27 +517,27 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       </Select>
     </div>
     <div>
-      <Label htmlFor="vehicleType">Vehicle Type</Label>
+      <Label htmlFor="vehicleType">Tipo de vehículo</Label>
       <Select name="vehicleType" value={vehicleData.vehicleType || ''} onValueChange={(value) => setVehicleData(prev => ({ ...prev, vehicleType: value }))}>
         <SelectTrigger>
-          <SelectValue placeholder="Select a vehicle type" />
+          <SelectValue placeholder="Seleccione el tipo de vehículo" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="SUV">SUV</SelectItem>
-          <SelectItem value="Truck">Truck</SelectItem>
-          <SelectItem value="Sedan">Sedan</SelectItem>
-          <SelectItem value="Coupe">Coupe</SelectItem>
+          <SelectItem value="Camioneta">Camioneta</SelectItem>
+          <SelectItem value="Sedan">Sedán</SelectItem>
+          <SelectItem value="Coupe">Coupé</SelectItem>
           <SelectItem value="Convertible">Convertible</SelectItem>
         </SelectContent>
       </Select>
     </div>
   </div>
   <div className="mt-4">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Descripción</Label>
             <Input id="description" name="description" value={vehicleData.description || ''} onChange={handleInputChange} />
           </div>
           <div className="mt-4">
-            <Label>Vehicle Images</Label>
+            <Label>Imágenes del vehículo</Label>
             <div className="flex flex-wrap gap-2 mt-2">
               {vehicleImages.map((img, index) => (
                 <div key={`existing-${index}`} className="relative w-24 h-24">
@@ -579,8 +590,8 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
           </div>
         </CardContent>
         <CardFooter className='bg-gray-900 text-white p-6 flex justify-end'>
-          <Button className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors" onClick={handleSubmit}>{isEditing ? 'Update' : 'Add'}</Button>
-          <Button className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors" onClick={onClose}>Cancel</Button>
+          <Button className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors" onClick={handleSubmit}>{isEditing ? 'Actualizar' : 'Agregar'}</Button>
+          <Button className="px-6 py-3 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors" onClick={onClose}>Cancelar</Button>
         </CardFooter>
       </Card>
     </Modal>
