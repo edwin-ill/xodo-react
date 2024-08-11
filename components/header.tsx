@@ -20,7 +20,7 @@ export function Header() {
     <header className="flex h-16 items-center border-b bg-gray-100 px-6">
       <Link className="flex items-center gap-2" href="#">
         <CarIcon className="h-6 w-6" />
-        <span className="text-lg font-semibold">Acme Car Dealership</span>
+        <span className="text-lg font-semibold">Xodo Auto Import</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
         <DropdownMenu>

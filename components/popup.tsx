@@ -77,6 +77,11 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
   const handleNavigate = () => {
     router.push('/inventory');
   };
+  const preventNonNumericInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+      e.preventDefault();
+    }
+  };
 
   useEffect(() => {
     if (vehicleToEdit) {
@@ -95,6 +100,7 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
     const { name, value } = e.target;
     setVehicleData(prev => ({ ...prev, [name]: value }));
   };
+  
 
   const fetchDealerships = async () => {
     try {
@@ -223,7 +229,6 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
         model: data.Model || '',
         year: data.ModelYear || '',
         engineType: data.EngineConfiguration || '',
-        transmissionType: data.TransmissionStyle || '',
         description: `${data.Make} ${data.Model} ${data.ModelYear} - ${data.EngineHP} HP, ${data.FuelTypePrimary} engine`
       }));
 
@@ -466,6 +471,7 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       </div>
     </div>
     <div>
+      
       <Label htmlFor="carMake">Marca del auto</Label>
       <Input id="carMake" name="carMake" value={vehicleData.carMake || ''} onChange={handleInputChange} />
     </div>
@@ -474,8 +480,15 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       <Input id="model" name="model" value={vehicleData.model || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="year">Año</Label>
-      <Input id="year" name="year" value={vehicleData.year || ''} onChange={handleInputChange} />
+    <Label htmlFor="year">Año</Label>
+    <Input 
+      id="year" 
+      name="year" 
+      type="number" 
+      value={vehicleData.year || ''} 
+      onChange={handleInputChange}
+      onKeyDown={preventNonNumericInput}
+    />
     </div>
     <div>
       <Label htmlFor="color">Color</Label>
@@ -483,7 +496,14 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
     </div>
     <div>
       <Label htmlFor="price">Precio</Label>
-      <Input id="price" name="price" value={vehicleData.price || ''} onChange={handleInputChange} />
+      <Input 
+        id="price" 
+        name="price" 
+        type="number" 
+        value={vehicleData.price || ''} 
+        onChange={handleInputChange}
+        onKeyDown={preventNonNumericInput}
+      />
     </div>
     <div>
       <Label htmlFor="engineType">Tipo de motor</Label>
@@ -494,8 +514,15 @@ export function Popup({ onClose, vehicleToEdit = null }: PopupProps) {
       <Input id="transmissionType" name="transmissionType" value={vehicleData.transmissionType || ''} onChange={handleInputChange} />
     </div>
     <div>
-      <Label htmlFor="mileage">Millaje</Label>
-      <Input id="mileage" name="mileage" value={vehicleData.mileage || ''} onChange={handleInputChange} />
+    <Label htmlFor="mileage">Millaje</Label>
+      <Input 
+        id="mileage" 
+        name="mileage" 
+        type="number" 
+        value={vehicleData.mileage || ''} 
+        onChange={handleInputChange}
+        onKeyDown={preventNonNumericInput}
+      />
     </div>
     <div>
       <Label htmlFor="dealershipId">Concesionario</Label>

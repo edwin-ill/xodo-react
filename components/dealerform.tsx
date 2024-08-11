@@ -82,6 +82,7 @@ const handleNavigate = () => {
             Número de teléfono
             </Label>
             <Input
+              type="number"
               className="px-4 py-3 rounded-md border border-gray-200 border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-500 focus:outline-none"
               id="phoneNumber"
               placeholder="Enter phone number"

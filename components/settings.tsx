@@ -35,9 +35,30 @@ export function Settings() {
   const [users, setUsers] = useState<User[]>([]);
   const {data : session} = useSession();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const currentUser = session?.user;
+  const [passwords, setPasswords] = useState({ password: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState('');
 
   const refresh = () => {
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPasswords = { ...passwords, [e.target.name]: e.target.value };
+    setPasswords(newPasswords);
+    
+    if (newPasswords.password && newPasswords.confirmPassword) {
+      validatePasswords();
+    }
+  };
+  
+  const validatePasswords = () => {
+    if (passwords.password !== passwords.confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden');
+      return false;
+    }
+    setPasswordError('');
+    return true;
   };
 
   useEffect(() => {
@@ -46,15 +67,17 @@ export function Settings() {
         const response = await fetch("https://localhost:7126/api/v1/Dealership");
         const data = await response.json();
         if (data.succeeded) {
-          setDealerships(data.data);
+          setDealerships(data.data || []);
         } else {
           console.error("Error fetching dealerships:", data.message);
+          setDealerships([]); 
         }
       } catch (error) {
         console.error("Error fetching dealerships:", error);
+        setDealerships([]); 
       }
     }
-
+  
     fetchDealerships();
   }, [refreshTrigger]);
 
@@ -121,18 +144,24 @@ export function Settings() {
           'Authorization': `Bearer ${session?.user.jwToken}`
         }
       });
-      const data = await response.json();
-      if (response.status == 204) {
-        refresh();
+  
+      if (response.status === 204) {
         Sweet.fire({
           title: 'Concesionario eliminado correctamente',
           icon: 'success',
           confirmButtonText: 'OK'
+        }).then(() => {
+          setDealerships(prevDealerships => 
+            prevDealerships.filter(dealership => dealership.id !== dealershipId)
+          );
+          refresh();
         });
       } else {
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
         Sweet.fire({
           title: 'Error eliminando concesionario',
-          text: data.message,
+          text: data.message || 'Ocurrió un error desconocido',
           icon: 'error',
           confirmButtonText: 'OK'
         });
@@ -147,9 +176,10 @@ export function Settings() {
       });
     }
   }
-
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!validatePasswords()) {
+      return}   
     const form = event.target;
   
     const formData = {
@@ -183,6 +213,9 @@ export function Settings() {
         });
         refresh();
         form.reset(); 
+        setPasswords({ password: '', confirmPassword: '' });
+        form['new-password'].value = '';
+        form['confirm-password'].value = '';
       } else {
         Sweet.fire({
           title: 'Error creando cuenta',
@@ -240,7 +273,7 @@ export function Settings() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="new-phonenumber">Número de teléfono</Label>
-                <Input id="new-phonenumber" type="text" autoComplete="off" />
+                <Input id="new-phonenumber" type="number" autoComplete="off" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="new-username">Usuario</Label>
@@ -252,11 +285,26 @@ export function Settings() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="new-password">Contraseña</Label>
-                <Input id="new-password" type="password" autoComplete="new-password" />
+                <Input 
+                  id="new-password" 
+                  name="password"
+                  type="password" 
+                  autoComplete="new-password" 
+                  value={passwords.password}
+                  onChange={handlePasswordChange}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="confirm-password">Confirmar contraseña</Label>
-                <Input id="confirm-password" type="password" autoComplete="new-password" />
+                <Input 
+                  id="confirm-password" 
+                  name="confirmPassword"
+                  type="password" 
+                  autoComplete="new-password" 
+                  value={passwords.confirmPassword}
+                  onChange={handlePasswordChange}
+                />
+                {passwordError && <span className="text-red-500 text-sm">{passwordError}</span>}
               </div>
               <Button type="submit">Crear cuenta</Button>
             </form>
@@ -282,27 +330,36 @@ export function Settings() {
                       <TableCell>{user.firstName}, {user.lastName}</TableCell>
                       <TableCell>{user.email}</TableCell>                      
                       <TableCell>
-                      <Button variant="destructive" size="sm" onClick={() => 
-                            Sweet.fire({
-                              title: '¿Estás seguro de que deseas eliminar esta cuenta?',
-                              text: 'Esta acción no es reversible',
-                              icon: 'warning',
-                              showCancelButton: true,
-                              confirmButtonColor:'#d33',
-                              cancelButtonColor: '#000000',
-                              confirmButtonText:'Sí',
-                              cancelButtonText:'Cancelar'
-                              }).then((result =>{
-                                if(result.value)
-                                {
+                          {user.id !== currentUser?.id ? (
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => 
+                              Sweet.fire({
+                                title: '¿Estás seguro de que deseas eliminar esta cuenta?',
+                                text: 'Esta acción no es reversible',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor:'#d33',
+                                cancelButtonColor: '#000000',
+                                confirmButtonText:'Sí',
+                                cancelButtonText:'Cancelar'
+                              }).then((result) => {
+                                if(result.value) {
                                   deleteUser(user.id)
                                 }
-                              })) }>Eliminar</Button>
-                        
+                              })
+                            }
+                            >
+                            Eliminar
+                          </Button>
+                        ) : (
+                          <span className="text-sm text-gray-500">Cuenta actual</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
-                  </TableBody>
+                </TableBody>
                 </Table>
               </CardContent>
             </Card>
@@ -358,46 +415,46 @@ export function Settings() {
             </Card>
           </section>
 
-          <section>
-            <h2 className="text-2xl font-semibold">Image Settings</h2>
-            <Card className="mt-4">
-              <CardContent className="pt-6">
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="client-index-image">Client Page Index Image</Label>
-                    <div className="flex items-center mt-2">
-                      <Input id="client-index-image" type="file" accept="image/*" />
-                      <Button className="ml-2" size="sm">
-                        <ImageIcon className="mr-2 h-4 w-4" /> Upload
-                      </Button>
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="login-background-image">Login Background Image</Label>
-                    <div className="flex items-center mt-2">
-                      <Input id="login-background-image" type="file" accept="image/*" />
-                      <Button className="ml-2" size="sm">
-                        <ImageIcon className="mr-2 h-4 w-4" /> Upload
-                      </Button>
-                    </div>
+          <section className="opacity-50 pointer-events-none">
+          <h2 className="text-2xl font-semibold">Image Settings</h2>
+          <Card className="mt-4">
+            <CardContent className="pt-6">
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="client-index-image">Client Page Index Image</Label>
+                  <div className="flex items-center mt-2">
+                    <Input id="client-index-image" type="file" accept="image/*" disabled />
+                    <Button className="ml-2" size="sm" disabled>
+                      <ImageIcon className="mr-2 h-4 w-4" /> Upload
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </section>
+                <div>
+                  <Label htmlFor="login-background-image">Login Background Image</Label>
+                  <div className="flex items-center mt-2">
+                    <Input id="login-background-image" type="file" accept="image/*" disabled />
+                    <Button className="ml-2" size="sm" disabled>
+                      <ImageIcon className="mr-2 h-4 w-4" /> Upload
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-          <section>
-            <h2 className="text-2xl font-semibold">Configuración de cuenta</h2>
-            <Card className="mt-4">
-              <CardContent className="pt-6">
-                <div className="grid gap-4">
-                  <div>
-                    <Button variant="outline" size="sm">Cambiar contraseña</Button>
-                  </div>                 
-                </div>
-              </CardContent>
-            </Card>
-          </section>        
+        <section className="opacity-50 pointer-events-none">
+          <h2 className="text-2xl font-semibold">Configuración de cuenta</h2>
+          <Card className="mt-4">
+            <CardContent className="pt-6">
+              <div className="grid gap-4">
+                <div>
+                  <Button variant="outline" size="sm" disabled>Cambiar contraseña</Button>
+                </div>                 
+              </div>
+            </CardContent>
+          </Card>
+        </section>       
           {showDealerForm && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg overflow-hidden max-w-2xl w-full">
